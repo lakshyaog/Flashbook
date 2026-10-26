@@ -1,0 +1,32 @@
+{
+  "name": "flashbook-ai",
+  "version": "1.0.0",
+  "description": "FlashBook AI — Decentralized On-Chain Trading Platform with AI Market Making",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "test:contracts": "export PATH=\"$PATH:$HOME/.foundry/bin\" && cd contracts && forge test -vvv",
+    "test:backend": "cd backend && npm test",
+    "test": "npm run test:contracts && npm run test:backend",
+    "build:contracts": "export PATH=\"$PATH:$HOME/.foundry/bin\" && cd contracts && forge build",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:contracts && npm run build:backend && npm run build:frontend"
+  },
+  "keywords": [
+    "web3",
+    "defi",
+    "dex",
+    "order-book",
+    "market-making",
+    "ai",
+    "solidity",
+    "foundry",
+    "wagmi",
+    "ethereum",
+    "sepolia"
+  ],
+  "author": "FlashBook AI Protocol Engineering Team",
+  "license": "MIT"
+}
