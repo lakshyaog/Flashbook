@@ -24,6 +24,7 @@ export const CONFIG = {
     baseSpreadBps: parseInt(process.env.MM_BASE_SPREAD_BPS || '30', 10), // 30 bps = 0.30%
     riskAversionGamma: parseFloat(process.env.MM_GAMMA || '0.1'),
     maxPriceDeviationBps: parseInt(process.env.MM_MAX_PRICE_DEV_BPS || '500', 10), // 5% circuit breaker
+    referencePrice: parseFloat(process.env.MM_REFERENCE_PRICE || '3000'), // Bootstrap mid before any book/trades exist
     privateKey: (process.env.MM_PRIVATE_KEY || '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d') as `0x${string}`, // Anvil Account #1
   }
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { fmtUsd, EMPTY } from '../utils/format';
 import { Bot, Cpu, ShieldCheck, AlertTriangle, RefreshCw, Sliders, Play, Pause } from 'lucide-react';
 
 export interface MMStatusData {
@@ -13,22 +14,27 @@ export interface MMStatusData {
     minOrderSizeWeth: number;
     maxPriceDeviationBps: number;
   };
-  latestDecision?: {
-    referencePrice: number;
-    reservationPrice: number;
-    inventoryWeth: number;
-    targetInventoryWeth: number;
-    inventorySkew: number;
-    volatility: number;
-    halfSpreadBps: number;
-    recommendedBid: number;
-    recommendedAsk: number;
-    recommendedBidSize: number;
-    recommendedAskSize: number;
-    riskStatus: 'NORMAL' | 'CIRCUIT_BREAKER' | 'EXPOSURE_LIMIT';
-    dryRun: boolean;
-    actionTaken: string;
-  };
+  latestDecision?: MMDecision;
+  recentDecisions?: MMDecision[];
+}
+
+export interface MMDecision {
+  id?: string;
+  timestamp?: number;
+  referencePrice: number;
+  reservationPrice: number;
+  inventoryWeth: number;
+  targetInventoryWeth: number;
+  inventorySkew: number;
+  volatility: number;
+  halfSpreadBps: number;
+  recommendedBid: number;
+  recommendedAsk: number;
+  recommendedBidSize: number;
+  recommendedAskSize: number;
+  riskStatus: 'NORMAL' | 'CIRCUIT_BREAKER' | 'EXPOSURE_LIMIT';
+  dryRun: boolean;
+  actionTaken: string;
 }
 
 interface MarketMakerPanelProps {
@@ -60,15 +66,15 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
   const isExposureLimit = decision?.riskStatus === 'EXPOSURE_LIMIT';
 
   return (
-    <div className="terminal-card rounded-xl p-3.5 flex flex-col h-full border border-brand/20 shadow-lg shadow-brand/5">
+    <div className="terminal-card-glow rounded-2xl p-4 flex flex-col h-full">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="p-1 rounded bg-brand/10 border border-brand/30 text-brand">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center">
             <Bot className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-textPrimary block">
+            <span className="text-[13px] font-semibold tracking-tight text-textPrimary block">
               AI Market Maker
             </span>
             <span className="text-[10px] text-textMuted font-mono block -mt-0.5">
@@ -82,9 +88,9 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
           <span
             className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
               isCircuitBreaker
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                ? 'bg-rose-500/20 text-rose-600 border border-rose-500/30'
                 : isExposureLimit
-                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30'
                 : 'bg-buySubtle text-buy border border-buy/30'
             }`}
           >
@@ -97,8 +103,8 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
             onClick={() => onToggleDryRun(!mmStatus?.dryRun)}
             className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
               mmStatus?.dryRun
-                ? 'bg-surfaceHover text-brand border-brand/30'
-                : 'bg-amber-500/10 text-amber-300 border-amber-500/30 font-bold'
+                ? 'bg-white text-textSecondary border-borderMuted hover:bg-surfaceHover shadow-[0_1px_2px_rgba(15,23,41,0.06)]'
+                : 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600 font-bold'
             }`}
           >
             {mmStatus?.dryRun ? 'DRY-RUN' : 'LIVE'}
@@ -110,15 +116,15 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
       <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-3">
         <div className="p-2 rounded-lg bg-surface/80 border border-border/80">
           <span className="text-[10px] text-textMuted uppercase block">Reference Mid</span>
-          <span className="font-bold text-white text-sm font-mono-numbers">
-            ${(decision?.referencePrice || 3000.0).toFixed(2)}
+          <span className="font-bold text-textPrimary text-sm font-mono-numbers">
+            {fmtUsd(decision?.referencePrice)}
           </span>
         </div>
 
         <div className="p-2 rounded-lg bg-surface/80 border border-border/80">
           <span className="text-[10px] text-textMuted uppercase block">Reservation Price</span>
           <span className="font-bold text-brand text-sm font-mono-numbers">
-            ${(decision?.reservationPrice || 3000.0).toFixed(2)}
+            {fmtUsd(decision?.reservationPrice)}
           </span>
         </div>
 
@@ -126,7 +132,7 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
           <span className="text-[10px] text-textMuted uppercase block">Inventory Skew</span>
           <span
             className={`font-semibold font-mono-numbers ${
-              (decision?.inventorySkew || 0) > 0 ? 'text-amber-400' : 'text-textPrimary'
+              (decision?.inventorySkew || 0) > 0 ? 'text-amber-600' : 'text-textPrimary'
             }`}
           >
             {(decision?.inventorySkew || 0) > 0 ? '+' : ''}
@@ -137,7 +143,7 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
         <div className="p-2 rounded-lg bg-surface/80 border border-border/80">
           <span className="text-[10px] text-textMuted uppercase block">Vol / Half-Spread</span>
           <span className="font-semibold text-textSecondary font-mono-numbers">
-            {((decision?.volatility || 0.015) * 100).toFixed(1)}% / {(decision?.halfSpreadBps || 15).toFixed(1)} bps
+            {decision ? `${(decision.volatility * 100).toFixed(1)}% / ${decision.halfSpreadBps.toFixed(1)} bps` : EMPTY}
           </span>
         </div>
       </div>
@@ -152,21 +158,21 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
         <div className="grid grid-cols-2 gap-2 text-xs font-mono">
           <div className="p-1.5 rounded bg-buySubtle/30 border border-buy/20">
             <span className="text-[10px] text-buy block font-semibold">BUY QUOTE (BID)</span>
-            <div className="font-bold text-white text-sm font-mono-numbers">
-              ${(decision?.recommendedBid || 2995.5).toFixed(2)}
+            <div className="font-bold text-textPrimary text-sm font-mono-numbers">
+              {fmtUsd(decision?.recommendedBid)}
             </div>
             <div className="text-[10px] text-textSecondary font-mono-numbers">
-              Size: {(decision?.recommendedBidSize || 0.5).toFixed(4)} WETH
+              Size: {decision ? `${decision.recommendedBidSize.toFixed(4)} WETH` : EMPTY}
             </div>
           </div>
 
           <div className="p-1.5 rounded bg-sellSubtle/30 border border-sell/20">
             <span className="text-[10px] text-sell block font-semibold">SELL QUOTE (ASK)</span>
-            <div className="font-bold text-white text-sm font-mono-numbers">
-              ${(decision?.recommendedAsk || 3004.5).toFixed(2)}
+            <div className="font-bold text-textPrimary text-sm font-mono-numbers">
+              {fmtUsd(decision?.recommendedAsk)}
             </div>
             <div className="text-[10px] text-textSecondary font-mono-numbers">
-              Size: {(decision?.recommendedAskSize || 0.5).toFixed(4)} WETH
+              Size: {decision ? `${decision.recommendedAskSize.toFixed(4)} WETH` : EMPTY}
             </div>
           </div>
         </div>
@@ -179,8 +185,8 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
           {decision?.actionTaken || 'Calculating baseline quotes from order book state.'}
         </div>
         <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[10px] text-textMuted mt-1">
-          <span>Target: {mmStatus?.params.targetInventoryWeth || 10} WETH</span>
-          <span>Max Dev: {mmStatus?.params.maxPriceDeviationBps || 500} bps</span>
+          <span>Target: {mmStatus ? `${mmStatus.params.targetInventoryWeth} WETH` : EMPTY}</span>
+          <span>Max Dev: {mmStatus ? `${mmStatus.params.maxPriceDeviationBps} bps` : EMPTY}</span>
         </div>
       </div>
 
@@ -188,7 +194,7 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
       <button
         onClick={handleStep}
         disabled={isStepping}
-        className="w-full py-2 rounded-lg bg-surfaceHover hover:bg-card border border-brand/30 hover:border-brand/60 text-brand text-xs font-mono font-medium transition-all flex items-center justify-center gap-2"
+        className="btn-brand-soft w-full py-2 !rounded-lg text-xs"
       >
         <RefreshCw className={`w-3.5 h-3.5 ${isStepping ? 'animate-spin' : ''}`} />
         <span>{isStepping ? 'Recalculating...' : 'Recalculate AI Quote'}</span>

@@ -6,6 +6,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  CartesianGrid,
 } from 'recharts';
 
 interface DepthChartProps {
@@ -43,17 +44,18 @@ export const DepthChart: React.FC<DepthChartProps> = ({ bids, asks, currentPrice
         <AreaChart data={depthData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="bidDepthGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00F59B" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#00F59B" stopOpacity={0.0} />
+              <stop offset="0%" stopColor="#0E9F6E" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#0E9F6E" stopOpacity={0.0} />
             </linearGradient>
             <linearGradient id="askDepthGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#FF4B72" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#FF4B72" stopOpacity={0.0} />
+              <stop offset="0%" stopColor="#E11D48" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#E11D48" stopOpacity={0.0} />
             </linearGradient>
           </defs>
+          <CartesianGrid stroke="#EEF0F3" vertical={false} />
           <XAxis
             dataKey="price"
-            stroke="#64748B"
+            stroke="#8A919E"
             fontSize={10}
             tickLine={false}
             axisLine={false}
@@ -61,7 +63,7 @@ export const DepthChart: React.FC<DepthChartProps> = ({ bids, asks, currentPrice
           />
           <YAxis
             orientation="right"
-            stroke="#64748B"
+            stroke="#8A919E"
             fontSize={10}
             tickLine={false}
             axisLine={false}
@@ -72,8 +74,8 @@ export const DepthChart: React.FC<DepthChartProps> = ({ bids, asks, currentPrice
               if (active && payload && payload.length) {
                 const data = payload[0].payload;
                 return (
-                  <div className="p-2 rounded-lg bg-surface/95 border border-border text-xs font-mono">
-                    <div className="text-white font-bold">${Number(data.price).toFixed(2)}</div>
+                  <div className="p-2 rounded-lg bg-card/95 border border-borderMuted text-xs font-mono">
+                    <div className="text-textPrimary font-bold">${Number(data.price).toFixed(2)}</div>
                     {data.bidDepth > 0 && <div className="text-buy">Buy Depth: {data.bidDepth.toFixed(4)} WETH</div>}
                     {data.askDepth > 0 && <div className="text-sell">Sell Depth: {data.askDepth.toFixed(4)} WETH</div>}
                   </div>
@@ -85,14 +87,14 @@ export const DepthChart: React.FC<DepthChartProps> = ({ bids, asks, currentPrice
           <Area
             type="stepAfter"
             dataKey="bidDepth"
-            stroke="#00F59B"
+            stroke="#0E9F6E"
             strokeWidth={1.5}
             fill="url(#bidDepthGradient)"
           />
           <Area
             type="stepAfter"
             dataKey="askDepth"
-            stroke="#FF4B72"
+            stroke="#E11D48"
             strokeWidth={1.5}
             fill="url(#askDepthGradient)"
           />

@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // Project lives on an external volume where native file events are unreliable
+    watch: { usePolling: true, interval: 300 },
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

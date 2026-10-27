@@ -10,6 +10,10 @@ export interface TradeItem {
   timestamp: number;
   txHash: string;
   isBuy?: boolean;
+  buyer?: string;
+  seller?: string;
+  quoteAmount?: number;
+  feeQuote?: number;
 }
 
 interface RecentTradesProps {
@@ -21,10 +25,13 @@ export const RecentTrades: React.FC<RecentTradesProps> = ({ trades }) => {
   const explorerUrl = chainId === 11155111 ? CONTRACTS.sepolia.explorer : CONTRACTS.anvil.explorer;
 
   return (
-    <div className="terminal-card rounded-xl p-3 flex flex-col h-full select-none">
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/60">
-        <span className="text-xs font-bold uppercase tracking-wider text-textPrimary">Recent Trades</span>
-        <span className="text-[10px] text-textMuted font-mono">Live On-Chain Fills</span>
+    <div className="terminal-card rounded-2xl p-4 flex flex-col h-full select-none">
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-border">
+        <span className="panel-title">Recent Trades</span>
+        <span className="flex items-center gap-1.5 text-[10px] text-textMuted">
+          <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
+          Live fills
+        </span>
       </div>
 
       <div className="grid grid-cols-4 text-[10px] uppercase font-mono text-textMuted pb-1 px-1">

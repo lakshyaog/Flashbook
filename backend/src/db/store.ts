@@ -102,11 +102,11 @@ export class DataStore {
           quoteAddress: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
           baseDecimals: 18,
           quoteDecimals: 6,
-          lastPrice: 3000.0,
-          change24h: 2.45,
-          high24h: 3080.0,
-          low24h: 2920.0,
-          volume24h: 142.5,
+          lastPrice: 0,
+          change24h: 0,
+          high24h: 0,
+          low24h: 0,
+          volume24h: 0,
         }
       },
       orders: {},
@@ -129,23 +129,52 @@ export class DataStore {
     }
   }
 
-  // Markets
+  // Markets — 24h stats are derived from indexed trades on every read, never stored
   public getMarket(pair: string): Market | undefined {
-    return this.state.markets[pair];
+    const market = this.state.markets[pair];
+    return market ? { ...market, ...this.computeMarketStats() } : undefined;
   }
 
   public getAllMarkets(): Market[] {
-    return Object.values(this.state.markets);
+    return Object.keys(this.state.markets).map(pair => this.getMarket(pair)!);
   }
 
-  public updateMarketPrice(pair: string, price: number, amount: number): void {
-    const market = this.state.markets[pair];
-    if (!market) return;
-    market.lastPrice = price;
-    market.volume24h += amount;
-    if (price > market.high24h) market.high24h = price;
-    if (price < market.low24h) market.low24h = price;
-    this.saveState();
+  /** Mid of the live book if both sides exist, else the last trade price, else 0. */
+  public getReferenceMid(): number {
+    const remaining = (o: OrderRecord) => o.amount - o.filledAmount > 0;
+    const bids = this.getActiveOrders('BUY').filter(remaining).map(o => o.price);
+    const asks = this.getActiveOrders('SELL').filter(remaining).map(o => o.price);
+    if (bids.length > 0 && asks.length > 0) {
+      return (Math.max(...bids) + Math.min(...asks)) / 2;
+    }
+    return this.state.trades[0]?.price ?? 0;
+  }
+
+  private computeMarketStats(): Pick<Market, 'lastPrice' | 'change24h' | 'high24h' | 'low24h' | 'volume24h'> {
+    const trades = this.state.trades; // newest first
+    if (trades.length === 0) {
+      return { lastPrice: 0, change24h: 0, high24h: 0, low24h: 0, volume24h: 0 };
+    }
+
+    const lastPrice = trades[0].price;
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const window = trades.filter(t => t.timestamp >= cutoff);
+    if (window.length === 0) {
+      return { lastPrice, change24h: 0, high24h: lastPrice, low24h: lastPrice, volume24h: 0 };
+    }
+
+    // Reference is the last trade before the window, else the oldest trade inside it
+    const before = trades.find(t => t.timestamp < cutoff);
+    const openPrice = before ? before.price : window[window.length - 1].price;
+    const prices = window.map(t => t.price);
+
+    return {
+      lastPrice,
+      change24h: openPrice > 0 ? parseFloat((((lastPrice - openPrice) / openPrice) * 100).toFixed(2)) : 0,
+      high24h: Math.max(...prices),
+      low24h: Math.min(...prices),
+      volume24h: parseFloat(window.reduce((sum, t) => sum + t.amount, 0).toFixed(4)),
+    };
   }
 
   // Orders
@@ -177,7 +206,6 @@ export class DataStore {
     if (this.state.trades.length > 500) {
       this.state.trades.pop();
     }
-    this.updateMarketPrice('FWETH-FUSDT', trade.price, trade.amount);
     this.saveState();
   }
 

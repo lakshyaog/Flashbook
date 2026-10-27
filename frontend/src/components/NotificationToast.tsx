@@ -21,10 +21,10 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ toasts, on
           key={toast.id}
           className={`pointer-events-auto p-3.5 rounded-xl border shadow-xl flex items-start gap-3 backdrop-blur-md transition-all animate-in slide-in-from-right-5 ${
             toast.type === 'success'
-              ? 'bg-surface/95 border-buy/30 text-white'
+              ? 'bg-surface/95 border-buy/30 text-textPrimary'
               : toast.type === 'error'
-              ? 'bg-surface/95 border-sell/40 text-white'
-              : 'bg-surface/95 border-brand/30 text-white'
+              ? 'bg-surface/95 border-sell/40 text-textPrimary'
+              : 'bg-surface/95 border-brand/30 text-textPrimary'
           }`}
         >
           <div className="mt-0.5">
@@ -40,7 +40,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ toasts, on
 
           <button
             onClick={() => onDismiss(toast.id)}
-            className="text-textMuted hover:text-white transition-colors"
+            className="text-textMuted hover:text-textPrimary transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>

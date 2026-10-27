@@ -48,8 +48,8 @@ export class MarketMakerService {
   }
 
   public async step(): Promise<QuoteRecommendation> {
-    const market = db.getMarket('FWETH-FUSDT');
-    const midPrice = market?.lastPrice || 3000.0;
+    // Anchor on the live book / last trade; a fresh market falls back to the configured bootstrap price
+    const midPrice = db.getReferenceMid() || CONFIG.marketMaker.referencePrice;
 
     // Maintain recent price window for circuit breaker checks
     this.priceHistoryWindow.push(midPrice);
