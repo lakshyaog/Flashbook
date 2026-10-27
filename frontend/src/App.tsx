@@ -4,9 +4,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { config } from './config/wagmi';
 import { CONTRACTS, ERC20_ABI } from './config/contracts';
 import { Header } from './components/Header';
+import { Sidebar, Page } from './components/Sidebar';
+import { StatsRow } from './components/StatsRow';
+import { MarketsPage, MarketSummary } from './pages/MarketsPage';
+import { MarketMakerPage } from './pages/MarketMakerPage';
+import { HistoryPage } from './pages/HistoryPage';
+
+const PAGE_TITLES: Record<Page, string> = {
+  dashboard: 'Market Overview',
+  markets: 'Markets',
+  'market-maker': 'AI Market Maker',
+  history: 'History',
+};
 import { OrderBook } from './components/OrderBook';
 import { OrderForm } from './components/OrderForm';
-import { PriceChart } from './components/PriceChart';
+import { PriceChart, Timeframe } from './components/PriceChart';
 import { RecentTrades, TradeItem } from './components/RecentTrades';
 import { UserOrders, UserOrderItem } from './components/UserOrders';
 import { MarketMakerPanel, MMStatusData } from './components/MarketMakerPanel';
@@ -25,28 +37,32 @@ function TradingTerminal() {
   const [isFaucetOpen, setIsFaucetOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // State data
+  // State data — starts empty; 0 means "no data yet" and renders as an em dash
   const [marketStats, setMarketStats] = useState({
-    lastPrice: 3000.0,
-    change24h: 2.45,
-    high24h: 3080.0,
-    low24h: 2920.0,
-    volume24h: 142.5,
+    lastPrice: 0,
+    change24h: 0,
+    high24h: 0,
+    low24h: 0,
+    volume24h: 0,
   });
 
   const [orderbook, setOrderbook] = useState({
     bids: [] as Array<{ price: number; amount: number; total: number; orderCount: number }>,
     asks: [] as Array<{ price: number; amount: number; total: number; orderCount: number }>,
-    bestBid: 2995.0,
-    bestAsk: 3005.0,
-    spread: 10.0,
-    spreadBps: 33.3,
+    bestBid: 0,
+    bestAsk: 0,
+    spread: 0,
+    spreadBps: 0,
   });
 
+  const [apiStatus, setApiStatus] = useState<'connecting' | 'online' | 'offline'>('connecting');
+  const [page, setPage] = useState<Page>('dashboard');
+  const [markets, setMarkets] = useState<MarketSummary[]>([]);
   const [recentTrades, setRecentTrades] = useState<TradeItem[]>([]);
   const [userOrders, setUserOrders] = useState<UserOrderItem[]>([]);
   const [mmStatus, setMmStatus] = useState<MMStatusData | null>(null);
   const [candles, setCandles] = useState<any[]>([]);
+  const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('1m');
 
   const addToast = useCallback((type: 'success' | 'error' | 'info', title: string, message: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
@@ -98,12 +114,13 @@ function TradingTerminal() {
   // Poll API for market data, orderbook, trades, user orders, and candles
   const fetchMarketData = useCallback(async () => {
     try {
-      const [marketRes, obRes, tradesRes, mmRes, candlesRes] = await Promise.allSettled([
+      const [marketRes, obRes, tradesRes, mmRes, candlesRes, marketsRes] = await Promise.allSettled([
         fetch('/api/markets/FWETH-FUSDT').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/orderbook').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/trades').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/market-maker/status').then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/analytics/candles?timeframe=1h').then((r) => (r.ok ? r.json() : null)),
+        fetch(`/api/analytics/candles?timeframe=${chartTimeframe}`).then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/markets').then((r) => (r.ok ? r.json() : null)),
       ]);
 
       if (marketRes.status === 'fulfilled' && marketRes.value?.success) {
@@ -121,6 +138,14 @@ function TradingTerminal() {
       if (candlesRes.status === 'fulfilled' && candlesRes.value?.success) {
         setCandles(candlesRes.value.data);
       }
+      if (marketsRes.status === 'fulfilled' && marketsRes.value?.success) {
+        setMarkets(marketsRes.value.data);
+      }
+
+      const anySuccess = [marketRes, obRes, tradesRes, mmRes, candlesRes, marketsRes].some(
+        (r) => r.status === 'fulfilled' && r.value?.success
+      );
+      setApiStatus(anySuccess ? 'online' : 'offline');
 
       if (address) {
         const userOrdersRes = await fetch(`/api/orders?maker=${address}`).then((r) =>
@@ -131,9 +156,9 @@ function TradingTerminal() {
         }
       }
     } catch (err) {
-      // Backend not yet reachable during initial start
+      setApiStatus('offline');
     }
-  }, [address]);
+  }, [address, chartTimeframe]);
 
   useEffect(() => {
     fetchMarketData();
@@ -176,11 +201,67 @@ function TradingTerminal() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-textPrimary flex flex-col font-sans">
-      <Header marketStats={marketStats} onOpenFaucet={() => setIsFaucetOpen(true)} />
+    <div className="min-h-screen bg-background app-backdrop text-textPrimary flex font-sans">
+      <Sidebar activePage={page} onNavigate={setPage} onOpenFaucet={() => setIsFaucetOpen(true)} />
+
+      <div className="flex-1 min-w-0 flex flex-col">
+      <Header title={PAGE_TITLES[page]} onOpenFaucet={() => setIsFaucetOpen(true)} />
+
+      {apiStatus === 'offline' && (
+        <div className="mx-4 mt-4 flex items-center gap-3 rounded-xl border border-sell/25 bg-sellSubtle px-4 py-3 text-sm">
+          <span className="w-2 h-2 rounded-full bg-sell animate-pulse" />
+          <span className="font-semibold text-sell">Backend offline</span>
+          <span className="text-textSecondary">
+            Can't reach the API on port 3001. Start it with <code className="font-mono text-textPrimary">cd backend &amp;&amp; npm run dev</code>. Data below is not live.
+          </span>
+        </div>
+      )}
+
+      {page === 'markets' && (
+        <MarketsPage
+          markets={markets}
+          marketStats={marketStats}
+          orderbook={orderbook}
+          candles={candles}
+          timeframe={chartTimeframe}
+          onTimeframeChange={setChartTimeframe}
+          trades={recentTrades}
+          onTrade={() => setPage('dashboard')}
+        />
+      )}
+
+      {page === 'market-maker' && (
+        <MarketMakerPage
+          mmStatus={mmStatus}
+          onStep={handleManualMMStep}
+          onToggleDryRun={handleToggleDryRun}
+        />
+      )}
+
+      {page === 'history' && (
+        <HistoryPage
+          orders={userOrders}
+          trades={recentTrades}
+          onOrderCancelled={handleOrderSuccess}
+          onNotify={addToast}
+        />
+      )}
+
+      {page === 'dashboard' && (<>
+      {/* KPI Row */}
+      <section className="px-4 pt-4 max-w-[1720px] w-full mx-auto">
+        <StatsRow
+          marketStats={marketStats}
+          spread={orderbook.spread}
+          spreadBps={orderbook.spreadBps}
+          candles={candles}
+          mmRiskStatus={mmStatus?.latestDecision?.riskStatus}
+          mmDryRun={mmStatus?.dryRun}
+        />
+      </section>
 
       {/* Main Terminal Grid */}
-      <main className="flex-1 p-3.5 grid grid-cols-1 lg:grid-cols-12 gap-3.5 max-w-[1720px] w-full mx-auto">
+      <main className="flex-1 p-4 grid grid-cols-1 lg:grid-cols-12 gap-3.5 max-w-[1720px] w-full mx-auto">
         {/* Left Column: Order Book (3 cols on desktop) */}
         <div className="lg:col-span-3 flex flex-col gap-3 min-h-[500px]">
           <OrderBook
@@ -204,6 +285,8 @@ function TradingTerminal() {
               priceChange={marketStats.change24h}
               bids={orderbook.bids}
               asks={orderbook.asks}
+              timeframe={chartTimeframe}
+              onTimeframeChange={setChartTimeframe}
             />
           </div>
 
@@ -238,7 +321,7 @@ function TradingTerminal() {
           </div>
 
           {/* AI Market Maker Control & Telemetry */}
-          <div className="h-[330px]">
+          <div className="min-h-[330px]">
             <MarketMakerPanel
               mmStatus={mmStatus}
               onRefresh={fetchMarketData}
@@ -248,6 +331,8 @@ function TradingTerminal() {
           </div>
         </div>
       </main>
+      </>)}
+      </div>
 
       {/* Faucet Modal */}
       <FaucetModal
