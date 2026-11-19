@@ -84,7 +84,12 @@ Where:
 ### Step 1: Start Local Anvil Blockchain
 In Terminal 1:
 ```bash
+# Standard start (may cause MetaMask rate limiting with frequent polling)
 anvil --port 8545
+
+# OR use optimized settings (recommended for MetaMask users):
+./scripts/start-anvil-optimized.sh
+# This starts Anvil with 2-second block times to reduce RPC load
 ```
 
 ### Step 2: Deploy Smart Contracts
@@ -208,3 +213,45 @@ To deploy on Ethereum Sepolia testnet:
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System components & data flow
 - [`docs/SECURITY_MODEL.md`](docs/SECURITY_MODEL.md) — Threat matrix & formal invariants
 - [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — Quality assurance coverage & verification matrix
+- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) — Common issues and solutions
+
+---
+
+## 9. Common Issues & Troubleshooting
+
+### MetaMask RPC Error: "Too many errors, retrying in 0.5 minutes"
+
+This occurs when MetaMask overwhelms the local Anvil node with too many requests. **Quick fixes:**
+
+1. **Use the optimized Anvil script** (recommended):
+   ```bash
+   ./scripts/start-anvil-optimized.sh
+   ```
+
+2. **Reset MetaMask's rate limiting**:
+   - Open MetaMask → Settings → Advanced
+   - Click "Clear activity tab data"
+   - Click "Reset account"
+
+3. **Use only one browser tab** with the app open
+
+4. **Temporarily switch networks** in MetaMask (to Sepolia and back)
+
+See [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) for detailed solutions.
+
+### Backend Connection Issues
+
+If you see "Backend offline" warning:
+```bash
+# Ensure all services are running:
+# Terminal 1: Anvil
+./scripts/start-anvil-optimized.sh
+
+# Terminal 2: Backend
+cd backend && npm run dev
+
+# Terminal 3: Frontend
+cd frontend && npm run dev
+```
+
+Verify backend health: `curl http://localhost:3001/api/health`

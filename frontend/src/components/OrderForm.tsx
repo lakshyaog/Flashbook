@@ -26,7 +26,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
   const { isConnected, address } = useAccount();
   const chainId = useChainId();
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
-  const [price, setPrice] = useState<string>('3000.00');
+  const [price, setPrice] = useState<string>('');
   const [amount, setAmount] = useState<string>('0.10');
   const [isApproving, setIsApproving] = useState<boolean>(false);
 
@@ -147,16 +147,21 @@ export const OrderForm: React.FC<OrderFormProps> = ({
   };
 
   return (
-    <div className="terminal-card rounded-xl p-4 flex flex-col h-full">
+    <div className="terminal-card rounded-2xl p-4 flex flex-col h-full">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+        <span className="panel-title">Place Order</span>
+        <span className="text-[10px] px-2 py-0.5 rounded-md bg-surfaceHover border border-border text-textMuted font-mono">LIMIT</span>
+      </div>
+
       {/* Side Switcher (Buy / Sell) */}
-      <div className="grid grid-cols-2 p-1 rounded-lg bg-surface border border-border/80 mb-4">
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-surfaceHover mb-4">
         <button
           type="button"
           onClick={() => setSide('BUY')}
-          className={`py-2 rounded-md font-semibold text-xs tracking-wider uppercase transition-all ${
+          className={`py-2 rounded-lg font-semibold text-xs tracking-wider uppercase transition-all ${
             side === 'BUY'
-              ? 'bg-buy text-black shadow-lg shadow-buy/20'
-              : 'text-textSecondary hover:text-white'
+              ? 'bg-buy text-white shadow-sm shadow-buy/30'
+              : 'text-textSecondary hover:text-textPrimary hover:bg-white'
           }`}
         >
           Buy FWETH
@@ -164,10 +169,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         <button
           type="button"
           onClick={() => setSide('SELL')}
-          className={`py-2 rounded-md font-semibold text-xs tracking-wider uppercase transition-all ${
+          className={`py-2 rounded-lg font-semibold text-xs tracking-wider uppercase transition-all ${
             side === 'SELL'
-              ? 'bg-sell text-white shadow-lg shadow-sell/20'
-              : 'text-textSecondary hover:text-white'
+              ? 'bg-sell text-white shadow-sm shadow-sell/30'
+              : 'text-textSecondary hover:text-textPrimary hover:bg-white'
           }`}
         >
           Sell FWETH
@@ -189,14 +194,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
       <form onSubmit={handlePlaceOrder} className="space-y-3.5 flex-1 flex flex-col justify-between">
         <div className="space-y-3.5">
-          {/* Order Type Badge */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-textMuted">Order Type:</span>
-            <span className="px-2 py-0.5 rounded bg-surfaceHover border border-border text-textSecondary font-mono text-[11px]">
-              LIMIT
-            </span>
-          </div>
-
           {/* Limit Price Input */}
           <div>
             <div className="flex justify-between text-[11px] text-textMuted mb-1 font-mono">
@@ -206,7 +203,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             <div className="relative">
               <input
                 type="number"
-                step="0.01"
+                step="any"
                 min="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
@@ -226,7 +223,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             <div className="relative">
               <input
                 type="number"
-                step="0.001"
+                step="any"
                 min="0.0001"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -244,7 +241,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 key={pct}
                 type="button"
                 onClick={() => handlePercentageClick(pct)}
-                className="py-1 rounded bg-surface hover:bg-surfaceHover border border-border/80 text-[11px] font-mono text-textSecondary hover:text-white transition-colors"
+                className="btn-secondary !rounded-lg py-1 text-[11px] font-mono !text-textSecondary hover:!text-textPrimary"
               >
                 {pct}%
               </button>
@@ -279,7 +276,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               type="button"
               disabled={isApproving}
               onClick={handleApprove}
-              className="w-full py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs tracking-wider uppercase transition-colors shadow-sm shadow-amber-500/30 flex items-center justify-center gap-2"
             >
               {isApproving ? (
                 <>
@@ -297,12 +294,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             <button
               type="submit"
               disabled={isPlacingOrder || !isConnected}
-              className={`w-full py-2.5 rounded-lg font-semibold text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 ${
+              className={`w-full py-2.5 rounded-lg font-semibold text-xs tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
                 !isConnected
-                  ? 'bg-surface border border-border text-textMuted cursor-not-allowed'
+                  ? 'bg-surfaceHover border border-border text-textMuted cursor-not-allowed'
                   : side === 'BUY'
-                  ? 'bg-buy hover:bg-buyHover text-black shadow-buy/20'
-                  : 'bg-sell hover:bg-sellHover text-white shadow-sell/20'
+                  ? 'bg-buy hover:bg-buyHover text-white shadow-sm shadow-buy/30'
+                  : 'bg-sell hover:bg-sellHover text-white shadow-sm shadow-sell/30'
               }`}
             >
               {isPlacingOrder ? (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
+import { fmtUsd } from '../utils/format';
 
 interface OrderBookLevel {
   price: number;
@@ -38,15 +39,10 @@ export const OrderBook: React.FC<OrderBookProps> = ({
   );
 
   return (
-    <div className="terminal-card rounded-xl p-3 flex flex-col h-full select-none">
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-textPrimary">Order Book</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-surfaceHover text-textMuted font-mono">FWETH-FUSDT</span>
-        </div>
-        <div className="text-[10px] text-textMuted font-mono">
-          Spread: <span className="text-textSecondary">${spread.toFixed(2)}</span> ({spreadBps.toFixed(1)} bps)
-        </div>
+    <div className="terminal-card rounded-2xl p-4 flex flex-col h-full select-none">
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-border">
+        <span className="panel-title">Order Book</span>
+        <span className="text-[10px] px-2 py-0.5 rounded-md bg-surfaceHover border border-border text-textMuted font-mono">FWETH-FUSDT</span>
       </div>
 
       {/* Column Headers */}
@@ -90,18 +86,20 @@ export const OrderBook: React.FC<OrderBookProps> = ({
       </div>
 
       {/* Mid Market Spread Bar */}
-      <div className="py-2 my-1 px-2 rounded-lg bg-surface/80 border-y border-border/80 flex items-center justify-between text-xs font-mono">
-        <div className="flex items-center gap-1.5">
-          <span className="text-textMuted text-[10px]">MID PRICE:</span>
-          <span className="font-semibold text-white font-mono-numbers">
-            ${bestAsk > 0 && bestBid > 0 ? ((bestAsk + bestBid) / 2).toFixed(2) : (bestBid || bestAsk || 3000).toFixed(2)}
+      <div className="py-2.5 my-2 px-3 rounded-xl bg-background/70 border border-border flex items-center justify-between text-xs font-mono">
+        <div className="flex items-baseline gap-2">
+          <span className="text-textMuted text-[10px] font-sans">Mid</span>
+          <span className="font-semibold text-base text-textPrimary font-mono-numbers">
+            {fmtUsd(bestAsk > 0 && bestBid > 0 ? (bestAsk + bestBid) / 2 : bestBid || bestAsk)}
           </span>
         </div>
         <div className="flex items-center gap-1 text-[11px]">
           {spread > 0 ? (
             <span className="text-brand font-medium">${spread.toFixed(2)} ({spreadBps.toFixed(1)} bps)</span>
-          ) : (
+          ) : bestBid > 0 && bestAsk > 0 ? (
             <span className="text-buy font-medium">Locked / Crossed</span>
+          ) : (
+            <span className="text-textMuted font-sans">{bestBid || bestAsk ? 'One-sided book' : 'Empty book'}</span>
           )}
         </div>
       </div>
