@@ -143,7 +143,9 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
         <div className="p-2 rounded-lg bg-surface/80 border border-border/80">
           <span className="text-[10px] text-textMuted uppercase block">Vol / Half-Spread</span>
           <span className="font-semibold text-textSecondary font-mono-numbers">
-            {decision ? `${(decision.volatility * 100).toFixed(1)}% / ${decision.halfSpreadBps.toFixed(1)} bps` : EMPTY}
+            {decision?.volatility != null && decision?.halfSpreadBps != null
+              ? `${(decision.volatility * 100).toFixed(1)}% / ${decision.halfSpreadBps.toFixed(1)} bps`
+              : EMPTY}
           </span>
         </div>
       </div>
@@ -162,7 +164,7 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
               {fmtUsd(decision?.recommendedBid)}
             </div>
             <div className="text-[10px] text-textSecondary font-mono-numbers">
-              Size: {decision ? `${decision.recommendedBidSize.toFixed(4)} WETH` : EMPTY}
+              Size: {decision?.recommendedBidSize != null ? `${decision.recommendedBidSize.toFixed(4)} WETH` : EMPTY}
             </div>
           </div>
 
@@ -172,7 +174,7 @@ export const MarketMakerPanel: React.FC<MarketMakerPanelProps> = ({
               {fmtUsd(decision?.recommendedAsk)}
             </div>
             <div className="text-[10px] text-textSecondary font-mono-numbers">
-              Size: {decision ? `${decision.recommendedAskSize.toFixed(4)} WETH` : EMPTY}
+              Size: {decision?.recommendedAskSize != null ? `${decision.recommendedAskSize.toFixed(4)} WETH` : EMPTY}
             </div>
           </div>
         </div>

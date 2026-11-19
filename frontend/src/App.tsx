@@ -24,8 +24,19 @@ import { UserOrders, UserOrderItem } from './components/UserOrders';
 import { MarketMakerPanel, MMStatusData } from './components/MarketMakerPanel';
 import { FaucetModal } from './components/FaucetModal';
 import { NotificationToast, ToastMessage } from './components/NotificationToast';
+import { DebugPanel } from './components/DebugPanel';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce automatic refetch frequency
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 2,
+      staleTime: 5000, // Consider data fresh for 5 seconds
+    },
+  },
+});
 
 function TradingTerminal() {
   const { address, isConnected } = useAccount();
@@ -104,6 +115,11 @@ function TradingTerminal() {
         args: [address || '0x0000000000000000000000000000000000000000', activeContractConfig.exchange],
       },
     ],
+    query: {
+      // Reduce automatic refetch frequency to avoid overwhelming RPC
+      refetchInterval: 6000, // Refetch every 6 seconds
+      staleTime: 3000, // Consider data fresh for 3 seconds
+    },
   });
 
   const wethBalance = (contractData?.[0]?.result as bigint) || 0n;
@@ -347,6 +363,9 @@ function TradingTerminal() {
 
       {/* Floating Notifications */}
       <NotificationToast toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Debug Panel */}
+      <DebugPanel />
     </div>
   );
 }

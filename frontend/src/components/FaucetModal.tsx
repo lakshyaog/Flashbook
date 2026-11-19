@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useAccount, useWriteContract, useChainId } from 'wagmi';
+import React, { useState, useEffect } from 'react';
+import { useAccount, useWriteContract, useChainId, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { CONTRACTS, ERC20_ABI } from '../config/contracts';
 import { X, Droplets, Check, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 
@@ -18,11 +18,19 @@ export const FaucetModal: React.FC<FaucetModalProps> = ({
 }) => {
   const { isConnected, address } = useAccount();
   const chainId = useChainId();
+  const publicClient = usePublicClient();
   const [isClaimingWeth, setIsClaimingWeth] = useState(false);
   const [isClaimingUsdt, setIsClaimingUsdt] = useState(false);
 
   const activeContractConfig = chainId === 11155111 ? CONTRACTS.sepolia : CONTRACTS.anvil;
   const { writeContractAsync } = useWriteContract();
+
+  // Debug logging on mount
+  useEffect(() => {
+    console.log('🔧 [FAUCET MODAL] Initialized');
+    console.log('🔧 [FAUCET MODAL] publicClient:', publicClient);
+    console.log('🔧 [FAUCET MODAL] chainId:', chainId);
+  }, [publicClient, chainId]);
 
   if (!isOpen) return null;
 
@@ -37,14 +45,22 @@ export const FaucetModal: React.FC<FaucetModalProps> = ({
         address: activeContractConfig.weth,
         abi: ERC20_ABI,
         functionName: 'faucet',
-        args: []
+        args: [],
+        gas: 100000n
       });
-      onNotify('info', 'Claim Submitted', `Tx: ${hash.slice(0, 10)}...`);
-      setTimeout(() => {
+      onNotify('info', 'Claim Submitted', `Waiting for confirmation...`);
+      
+      // Wait for transaction to be mined
+      const receipt = await publicClient?.waitForTransactionReceipt({ hash });
+      
+      if (receipt?.status === 'success') {
         setIsClaimingWeth(false);
         onClaimSuccess();
         onNotify('success', '1 FWETH Claimed', '1 FakeWETH has been minted to your wallet.');
-      }, 2500);
+      } else {
+        setIsClaimingWeth(false);
+        onNotify('error', 'Transaction Failed', 'The transaction was reverted.');
+      }
     } catch (err: any) {
       setIsClaimingWeth(false);
       onNotify('error', 'Faucet Error', err.shortMessage || err.message);
@@ -56,21 +72,49 @@ export const FaucetModal: React.FC<FaucetModalProps> = ({
       onNotify('error', 'Wallet Not Connected', 'Please connect your wallet first.');
       return;
     }
+    
+    console.log('🟢 [USDT FAUCET] Starting claim process');
+    console.log('🟢 [USDT FAUCET] Chain ID:', chainId);
+    console.log('🟢 [USDT FAUCET] Contract Address:', activeContractConfig.usdt);
+    console.log('🟢 [USDT FAUCET] User Address:', address);
+    
     setIsClaimingUsdt(true);
     try {
+      console.log('🟢 [USDT FAUCET] Calling writeContractAsync...');
       const hash = await writeContractAsync({
         address: activeContractConfig.usdt,
         abi: ERC20_ABI,
         functionName: 'faucet',
-        args: []
+        args: [],
+        gas: 100000n
       });
-      onNotify('info', 'Claim Submitted', `Tx: ${hash.slice(0, 10)}...`);
-      setTimeout(() => {
+      console.log('🟢 [USDT FAUCET] Transaction submitted! Hash:', hash);
+      onNotify('info', 'Claim Submitted', `Waiting for confirmation...`);
+      
+      // Wait for transaction to be mined
+      console.log('🟢 [USDT FAUCET] Waiting for transaction receipt...');
+      const receipt = await publicClient?.waitForTransactionReceipt({ hash });
+      console.log('🟢 [USDT FAUCET] Receipt received:', receipt);
+      
+      if (receipt?.status === 'success') {
+        console.log('✅ [USDT FAUCET] Transaction successful!');
         setIsClaimingUsdt(false);
         onClaimSuccess();
         onNotify('success', '1,000 FUSDT Claimed', '1,000 FakeUSDT has been minted to your wallet.');
-      }, 2500);
+      } else {
+        console.error('❌ [USDT FAUCET] Transaction failed/reverted');
+        setIsClaimingUsdt(false);
+        onNotify('error', 'Transaction Failed', 'The transaction was reverted.');
+      }
     } catch (err: any) {
+      console.error('❌ [USDT FAUCET] Error:', err);
+      console.error('❌ [USDT FAUCET] Error details:', {
+        message: err.message,
+        shortMessage: err.shortMessage,
+        code: err.code,
+        data: err.data,
+        cause: err.cause
+      });
       setIsClaimingUsdt(false);
       onNotify('error', 'Faucet Error', err.shortMessage || err.message);
     }
